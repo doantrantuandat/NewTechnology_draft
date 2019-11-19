@@ -7,8 +7,8 @@
 # WARNING! All changes made in this file will be lost!
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtWidgets import QApplication, QDialog,QLabel,QWidget
-from PyQt5.QtGui import QIcon, QPixmap,QImage
+from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QWidget
+from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.uic import loadUi
 import cv2
 import os
@@ -33,17 +33,25 @@ label_ids = {}
 y_labels = []
 x_train = []
 
+# Duong dan toi lib cascade
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+image_dir2_cas = dirname(str(BASE_DIR))
+image_dir_cas = os.path.join(
+    image_dir2_cas, "cascades\haarcascade_frontalface_alt2.xml")
+print("-----------------------------------------------")
+print(image_dir_cas)
+print("-----------------------------------------------")
+face_cascade = cv2.CascadeClassifier(image_dir_cas)
 
 
-face_cascade = cv2.CascadeClassifier(
-    'cascades/haarcascade_frontalface_alt2.xml')
 recognizer = cv2.face.LBPHFaceRecognizer_create()
-
 cap = cv2.VideoCapture(0)
 
 
 model_getImg = QtGui.QStandardItemModel()
 model_getTrain = QtGui.QStandardItemModel()
+
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -130,12 +138,11 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         # chinh bang
-        
+
         model_getImg.setHorizontalHeaderLabels(['Tên', 'MSSV', 'Lớp'])
         model_getImg.setColumnCount(3)
         self.tbl_getIma.setModel(model_getImg)
-        
-        
+
         model_getTrain.setHorizontalHeaderLabels(['Tên', 'MSSV', 'Lớp'])
         model_getTrain.setColumnCount(3)
         self.tbl_train.setModel(model_getTrain)
@@ -145,7 +152,6 @@ class Ui_MainWindow(object):
 
         self.btn_train.clicked.connect(self.faces_train)
         self.btn_refresh.clicked.connect(self.load_table_getImg)
-        
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -156,31 +162,36 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText(_translate("MainWindow", "Xóa"))
         self.btn_train.setText(_translate("MainWindow", "Train"))
         self.btn_layAnh.setText(_translate("MainWindow", "Lấy ảnh"))
-        self.btn_refresh.setText(_translate("MainWindow","Refresh 2 bảng"))
+        self.btn_refresh.setText(_translate("MainWindow", "Refresh 2 bảng"))
         self.label_2.setText(_translate("MainWindow", "Họ và tên"))
         self.label.setText(_translate("MainWindow", "MSSV"))
         self.label_3.setText(_translate("MainWindow", "Lớp"))
 
-
     def getImg_student(self):
+        image_dir = os.path.join(image_dir2_cas, "ima_student")
+        print(image_dir)
+
         title = self.txt_ten.text()+"_"+self.txt_mssv.text()+"_"+self.txt_lop.text()
 
         if self.txt_ten.text() == '':
-            QtWidgets.QMessageBox.about(self, "Wanning", "Phai day du ten , mssv, lop")
+            QtWidgets.QMessageBox.about(
+                self, "Wanning", "Phai day du ten , mssv, lop")
             return
-        if not os.path.exists('ima_student/'+title):
-            print(title)
-            os.mkdir('ima_student/'+ title)
-            print("Directory " , 'ima_student/'+ title ,  " Created ")
-            cursor.execute('INSERT INTO qlusername.dbo.student(ten,mssv,lop) values(?,?,?)',(self.txt_ten.text(), self.txt_mssv.text(), self.txt_lop.text()))
+        if not os.path.exists(image_dir+'/'+title):
+            os.mkdir(image_dir + "/" + title)
+            print("Directory ", image_dir+'\\' + title,  " Created ")
+
+            cursor.execute('INSERT INTO qlusername.dbo.student(ten,mssv,lop) values(?,?,?)',
+                           (self.txt_ten.text(), self.txt_mssv.text(), self.txt_lop.text()))
             cursor.commit()
-        else:    
-            QtWidgets.QMessageBox.about(self, "Wanning", "da ton tai sinh vien trong he thong")
+        else:
+            QtWidgets.QMessageBox.about(
+                self, "Wanning", "da ton tai sinh vien trong he thong")
             self.txt_ten.setText('')
             self.txt_mssv.setText('')
             self.txt_lop.setText('')
             return
-        
+
         dem = 0
         while True:
             ret, img = cap.read()
@@ -195,21 +206,18 @@ class Ui_MainWindow(object):
                 id_ = label_ids[label]
 
                 roi = gray[y:y+h, x:x+w]
-                cv2.imwrite("ima_student/" + label + "/" + "." +
+                cv2.imwrite(image_dir + "/" + title + "/" + "." +
                             str(dem) + ".jpg", gray[y:y+h, x:x+w])
 
                 x_train.append(roi)
-                y_labels.append(id_)
-                cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+
             cv2.imshow('frames', img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             if dem == 10:
                 cv2.destroyAllWindows()
                 break
-        
-        
-    
+
     def faces_train(self):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         image_dir2 = dirname(str(BASE_DIR))
@@ -217,7 +225,7 @@ class Ui_MainWindow(object):
         print("-----------------------------------------------")
         print(image_dir)
         print("-----------------------------------------------")
-        
+
         current_id = 0
         labels_id = {}
         y_labels = []
@@ -226,19 +234,19 @@ class Ui_MainWindow(object):
             for file in files:
                 if file.endswith("png") or file.endswith("jpg"):
                     path = os.path.join(root, file)
-                    label = os.path.basename(root).replace(" ", "-").lower()
-                
+                    label = os.path.basename(root).replace(" ", "_").lower()
+
                     if not label in labels_id:
                         labels_id[label] = current_id
                         current_id += 1
                     id_ = labels_id[label]
-                    print(id_)
-                
+
                 pil_image = Image.open(path).convert("L")
                 image_array = np.array(pil_image, "uint8")
+
                 faces = face_cascade.detectMultiScale(image_array, 1.1, 4)
                 for (x, y, w, h) in faces:
-                    
+
                     roi = image_array[y:y+h, x:x+w]
                     x_train.append(roi)
                     y_labels.append(id_)
@@ -248,7 +256,7 @@ class Ui_MainWindow(object):
         recognizer.save("facesAll_trainer.yml")
 
     def load_table_getImg(self):
-        
+
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         image_dir2 = dirname(str(BASE_DIR))
         image_dir = os.path.join(image_dir2, "ima_student")
@@ -257,34 +265,36 @@ class Ui_MainWindow(object):
         print("-----------------------------------------------")
 
         students = []
-        
+
         model_getImg.clear()
         for root, dirs, files in os.walk(image_dir):
             for file in files:
                 if file.endswith("png") or file.endswith("jpg"):
-                    
+
                     label = os.path.basename(root)
                     info = label.split('_')
                     if not info in students:
                         students.append(info)
         print(students)
         for i in range(len(students)):
-            
-            model_getImg.setItem(i,0, QtGui.QStandardItem(str(students[i][0])))
-            model_getImg.setItem(i,1,QtGui.QStandardItem(str(students[i][1])))
-            model_getImg.setItem(i,2, QtGui.QStandardItem(str(students[i][2])))
 
-            model_getTrain.setItem(i,0, QtGui.QStandardItem(str(students[i][0])))
-            model_getTrain.setItem(i,1,QtGui.QStandardItem(str(students[i][1])))
-            model_getTrain.setItem(i,2, QtGui.QStandardItem(str(students[i][2])))
+            model_getImg.setItem(
+                i, 0, QtGui.QStandardItem(str(students[i][0])))
+            model_getImg.setItem(
+                i, 1, QtGui.QStandardItem(str(students[i][1])))
+            model_getImg.setItem(
+                i, 2, QtGui.QStandardItem(str(students[i][2])))
+
+            model_getTrain.setItem(
+                i, 0, QtGui.QStandardItem(str(students[i][0])))
+            model_getTrain.setItem(
+                i, 1, QtGui.QStandardItem(str(students[i][1])))
+            model_getTrain.setItem(
+                i, 2, QtGui.QStandardItem(str(students[i][2])))
 
         model_getImg.setHorizontalHeaderLabels(['Tên', 'MSSV', 'Lớp'])
         model_getTrain.setHorizontalHeaderLabels(['Tên', 'MSSV', 'Lớp'])
-            
-        
 
-        
-                    
 
 if __name__ == "__main__":
     import sys
