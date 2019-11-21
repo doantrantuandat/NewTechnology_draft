@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'register.ui'
 #
@@ -100,6 +100,8 @@ class Register(QWidget):
                 print(dem)
                 label = self.txtUserName.text()
                 label_ids[label] = 0
+
+                
                 id_ = label_ids[label]
 
                 roi = gray[y:y+h, x:x+w]

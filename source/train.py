@@ -219,7 +219,7 @@ class Ui_MainWindow(object):
                 break
 
     def faces_train(self):
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        
         image_dir2 = dirname(str(BASE_DIR))
         image_dir = os.path.join(image_dir2, "ima_student")
         print("-----------------------------------------------")
@@ -234,13 +234,14 @@ class Ui_MainWindow(object):
             for file in files:
                 if file.endswith("png") or file.endswith("jpg"):
                     path = os.path.join(root, file)
-                    label = os.path.basename(root).replace(" ", "_").lower()
-
+                    label = os.path.basename(root).replace(" ", "-").lower()
+                    #print(label)
+                    lbl_split = label.split("_")
                     if not label in labels_id:
-                        labels_id[label] = current_id
-                        current_id += 1
+                        labels_id[label] = int(lbl_split[1])
+                        #current_id += 1
                     id_ = labels_id[label]
-
+                    print(id_)
                 pil_image = Image.open(path).convert("L")
                 image_array = np.array(pil_image, "uint8")
 
@@ -250,14 +251,15 @@ class Ui_MainWindow(object):
                     roi = image_array[y:y+h, x:x+w]
                     x_train.append(roi)
                     y_labels.append(id_)
-        with open("labels.pickle", "wb") as f:
+        print(y_labels)
+        with open(image_dir2 + "/pickles/"+ "labels.pickle", "wb") as f:
             pickle.dump(labels_id, f)
         recognizer.train(x_train, np.array(y_labels))
-        recognizer.save("facesAll_trainer.yml")
+        recognizer.save(image_dir2 + "/recognizers/"+"facesAll_trainer.yml")
+        print("Done!")
 
     def load_table_getImg(self):
 
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         image_dir2 = dirname(str(BASE_DIR))
         image_dir = os.path.join(image_dir2, "ima_student")
         print("-----------------------------------------------")
@@ -275,7 +277,7 @@ class Ui_MainWindow(object):
                     info = label.split('_')
                     if not info in students:
                         students.append(info)
-        print(students)
+        #print(students)
         for i in range(len(students)):
 
             model_getImg.setItem(
