@@ -216,7 +216,11 @@ class Ui_MainWindow(object):
                 return True
             else:
                 return False
-
+    def check_mssv_list(self, mssv):
+        if mssv == []:
+            return True
+        else:
+            return False
     def faces_train(self):
         print("Start Train!")
         image_dir2 = dirname(str(BASE_DIR))
@@ -261,7 +265,11 @@ class Ui_MainWindow(object):
             student.append(label_add_database[i].split("_"))
 
         for i in range(len(student)):
-            if self.check_trained(student[i][1], mssv) == False:
+            if self.check_mssv_list(mssv) == True:
+                cursor.execute('INSERT INTO qlusername.dbo.student(ten,mssv,lop) values(?,?,?)',
+                               (student[i][0], student[i][1], student[i][2]))
+                cursor.commit()
+            elif self.check_trained(student[i][1], mssv) == False:
                 cursor.execute('INSERT INTO qlusername.dbo.student(ten,mssv,lop) values(?,?,?)',
                                (student[i][0], student[i][1], student[i][2]))
                 cursor.commit()
@@ -274,11 +282,7 @@ class Ui_MainWindow(object):
         recognizer.save(image_dir2 + "/recognizers/"+"facesAll_trainer.yml")
         print("Done!")
 
-    def check_mssv_list(self, mssv):
-        if mssv == []:
-            return True
-        else:
-            return False
+    
 
     def load_table(self):
         model_getImg.clear()
