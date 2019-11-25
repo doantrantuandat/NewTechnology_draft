@@ -274,8 +274,15 @@ class Ui_MainWindow(object):
         recognizer.save(image_dir2 + "/recognizers/"+"facesAll_trainer.yml")
         print("Done!")
 
-    def load_table(self):
+    def check_mssv_list(self, mssv):
+        if mssv == []:
+            return True
+        else:
+            return False
 
+    def load_table(self):
+        model_getImg.clear()
+        model_getTrain.clear()
         image_dir2 = dirname(str(BASE_DIR))
         image_dir = os.path.join(image_dir2, "ima_student")
         print("-----------------------------------------------")
@@ -289,8 +296,8 @@ class Ui_MainWindow(object):
         for i in list_student:
             mssv.append(i[0])
             students_Trained.append(i)
-        print(students_Trained)
-        model_getImg.clear()
+        
+        
         for root, dirs, files in os.walk(image_dir):
             for file in files:
                 if file.endswith("png") or file.endswith("jpg"):
@@ -298,7 +305,7 @@ class Ui_MainWindow(object):
                     info = label.split('_')
                     if not info in students:
                         students.append(info)
-        # print(students)
+        #print(students)
         item_ten_list = []
         item_mssv_list = []
         item_lop_list = []
@@ -308,10 +315,15 @@ class Ui_MainWindow(object):
         item_lop_trained = []
 
         for i in range(len(students)):
-            if self.check_trained(students[i][1], mssv) == False:
+            if self.check_mssv_list(mssv) == True:
                 item_ten_list.append(students[i][0])
                 item_mssv_list.append(students[i][1])
                 item_lop_list.append(students[i][2])
+            else: 
+                if self.check_trained(students[i][1], mssv) == False:
+                    item_ten_list.append(students[i][0])
+                    item_mssv_list.append(students[i][1])
+                    item_lop_list.append(students[i][2])
         for i in range(len(students_Trained)):
             item_mssv_trained.append(students_Trained[i][0]) 
             item_ten_trained.append(students_Trained[i][1])
