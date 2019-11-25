@@ -169,7 +169,6 @@ class Ui_MainWindow(object):
 
     def getImg_student(self):
         image_dir = os.path.join(image_dir2_cas, "ima_student")
-        print(image_dir)
 
         title = self.txt_ten.text()+"_"+self.txt_mssv.text()+"_"+self.txt_lop.text()
 
@@ -180,10 +179,6 @@ class Ui_MainWindow(object):
         if not os.path.exists(image_dir+'/'+title):
             os.mkdir(image_dir + "/" + title)
             print("Directory ", image_dir+'\\' + title,  " Created ")
-
-            cursor.execute('INSERT INTO qlusername.dbo.student(ten,mssv,lop) values(?,?,?)',
-                           (self.txt_ten.text(), self.txt_mssv.text(), self.txt_lop.text()))
-            cursor.commit()
         else:
             QtWidgets.QMessageBox.about(
                 self, "Wanning", "da ton tai sinh vien trong he thong")
@@ -201,47 +196,50 @@ class Ui_MainWindow(object):
                 dem = dem + 1
                 print(dem)
                 label = str(title)
-
                 label_ids[label] = 0
                 id_ = label_ids[label]
-
                 roi = gray[y:y+h, x:x+w]
                 cv2.imwrite(image_dir + "/" + title + "/" + "." +
                             str(dem) + ".jpg", gray[y:y+h, x:x+w])
-
                 x_train.append(roi)
-
             cv2.imshow('frames', img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            if dem == 10:
+            if dem == 100:
                 cv2.destroyAllWindows()
                 break
 
+    def check_trained(self, trainer_mssv, mssv):
+        for i in range(len(mssv)):
+            if trainer_mssv in mssv:
+                return True
+            else:
+                return False
+
     def faces_train(self):
-        
+        print("Start Train!")
         image_dir2 = dirname(str(BASE_DIR))
         image_dir = os.path.join(image_dir2, "ima_student")
         print("-----------------------------------------------")
         print(image_dir)
         print("-----------------------------------------------")
-
-        current_id = 0
         labels_id = {}
+        label_add_database = []
         y_labels = []
         x_train = []
+
         for root, dirs, files in os.walk(image_dir):
             for file in files:
                 if file.endswith("png") or file.endswith("jpg"):
                     path = os.path.join(root, file)
-                    label = os.path.basename(root).replace(" ", "-").lower()
-                    #print(label)
+                    label = os.path.basename(root)
                     lbl_split = label.split("_")
                     if not label in labels_id:
                         labels_id[label] = int(lbl_split[1])
-                        #current_id += 1
+                        label_add_database.append(label)
+
                     id_ = labels_id[label]
-                    print(id_)
+
                 pil_image = Image.open(path).convert("L")
                 image_array = np.array(pil_image, "uint8")
 
@@ -251,14 +249,31 @@ class Ui_MainWindow(object):
                     roi = image_array[y:y+h, x:x+w]
                     x_train.append(roi)
                     y_labels.append(id_)
-        print(y_labels)
-        with open(image_dir2 + "/pickles/"+ "labels.pickle", "wb") as f:
+
+        student = []
+        mssv = []
+        list_student = cursor.execute('SELECT * FROM student')
+        for i in list_student:
+            mssv.append(i[0])
+
+        for i in range(len(label_add_database)):
+            student.append(label_add_database[i].split("_"))
+
+        for i in range(len(student)):
+            if self.check_trained(student[i][1], mssv) == False:
+                cursor.execute('INSERT INTO qlusername.dbo.student(ten,mssv,lop) values(?,?,?)',
+                               (student[i][0], student[i][1], student[i][2]))
+                cursor.commit()
+            else:
+                print("Sinh vien", student[i][1], "da co trong he thong")
+
+        with open(image_dir2 + "/pickles/" + "labels.pickle", "wb") as f:
             pickle.dump(labels_id, f)
         recognizer.train(x_train, np.array(y_labels))
         recognizer.save(image_dir2 + "/recognizers/"+"facesAll_trainer.yml")
         print("Done!")
 
-    def load_table_getImg(self):
+    def load_table(self):
 
         image_dir2 = dirname(str(BASE_DIR))
         image_dir = os.path.join(image_dir2, "ima_student")
@@ -267,33 +282,60 @@ class Ui_MainWindow(object):
         print("-----------------------------------------------")
 
         students = []
-
+        students_Trained = [] 
+        mssv = []
+        list_student = cursor.execute('SELECT * FROM student')
+        for i in list_student:
+            mssv.append(i[0])
+            students_Trained.append(i)
+        print(students_Trained)
         model_getImg.clear()
         for root, dirs, files in os.walk(image_dir):
             for file in files:
                 if file.endswith("png") or file.endswith("jpg"):
-
                     label = os.path.basename(root)
                     info = label.split('_')
                     if not info in students:
                         students.append(info)
-        #print(students)
+        # print(students)
+        item_ten_list = []
+        item_mssv_list = []
+        item_lop_list = []
+
+        item_ten_trained = []
+        item_mssv_trained = []
+        item_lop_trained = []
+
         for i in range(len(students)):
+            if self.check_trained(students[i][1], mssv) == False:
+                item_ten_list.append(students[i][0])
+                item_mssv_list.append(students[i][1])
+                item_lop_list.append(students[i][2])
+        for i in range(len(students_Trained)):
+            item_mssv_trained.append(students_Trained[i][0]) 
+            item_ten_trained.append(students_Trained[i][1])
+            item_lop_trained.append(students_Trained[i][2])
+        
+        for i in range(len(item_mssv_list)):
+            item_ten = QtGui.QStandardItem(str(item_ten_list[i]))
+            model_getImg.setItem(i, 0, item_ten)
 
-            model_getImg.setItem(
-                i, 0, QtGui.QStandardItem(str(students[i][0])))
-            model_getImg.setItem(
-                i, 1, QtGui.QStandardItem(str(students[i][1])))
-            model_getImg.setItem(
-                i, 2, QtGui.QStandardItem(str(students[i][2])))
+            item_mssv = QtGui.QStandardItem(str(item_mssv_list[i]))
+            model_getImg.setItem(i, 1, item_mssv)
 
-            model_getTrain.setItem(
-                i, 0, QtGui.QStandardItem(str(students[i][0])))
-            model_getTrain.setItem(
-                i, 1, QtGui.QStandardItem(str(students[i][1])))
-            model_getTrain.setItem(
-                i, 2, QtGui.QStandardItem(str(students[i][2])))
+            item_lop = QtGui.QStandardItem(str(item_lop_list[i]))
+            model_getImg.setItem(i, 2, item_lop)
+        
+        for i in range(len(item_mssv_trained)):
+            item_ten = QtGui.QStandardItem(str(item_ten_trained[i]))
+            model_getTrain.setItem(i, 0, item_ten)
 
+            item_mssv = QtGui.QStandardItem(str(item_mssv_trained[i]))
+            model_getTrain.setItem(i, 1, item_mssv)
+
+            item_lop = QtGui.QStandardItem(str(item_lop_trained[i]))
+            model_getTrain.setItem(i, 2, item_lop)
+        
         model_getImg.setHorizontalHeaderLabels(['Tên', 'MSSV', 'Lớp'])
         model_getTrain.setHorizontalHeaderLabels(['Tên', 'MSSV', 'Lớp'])
 
@@ -304,5 +346,6 @@ if __name__ == "__main__":
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
+    ui.load_table()
     MainWindow.show()
     sys.exit(app.exec_())
