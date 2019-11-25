@@ -151,7 +151,7 @@ class Ui_MainWindow(object):
         self.btn_layAnh.clicked.connect(self.getImg_student)
 
         self.btn_train.clicked.connect(self.faces_train)
-        self.btn_refresh.clicked.connect(self.load_table_getImg)
+        self.btn_refresh.clicked.connect(self.load_table)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -202,6 +202,7 @@ class Ui_MainWindow(object):
                 cv2.imwrite(image_dir + "/" + title + "/" + "." +
                             str(dem) + ".jpg", gray[y:y+h, x:x+w])
                 x_train.append(roi)
+                cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
             cv2.imshow('frames', img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
